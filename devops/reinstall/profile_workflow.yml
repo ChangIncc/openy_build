@@ -1,0 +1,22 @@
+---
+# This script contains commands to manage "Profile workflow" and install site from scratch by using installation profile.
+- name: Droping drupal database
+  mysql_db: name={{ mysql_db }} state=absent login_user={{ mysql_user }} login_password={{ mysql_pass }}
+
+- name: Creating drupal database
+  mysql_db: name={{ mysql_db }} state=present login_user={{ mysql_user }} login_password={{ mysql_pass }}
+
+- name: Remove settings.php
+  file: name={{ settings_file_path }} state=absent
+  sudo: yes
+  when: run_installation_process
+
+- name: Build project from drupal-org.make
+  shell: "cd profiles/contrib/openy && {{ php_env_vars }} drush make drupal-org.make -y --no-core --no-cache"
+  sudo: yes
+  when: trigger_drush_make
+  
+- name: Installing drupal
+  sudo: yes
+  shell: "{{ php_env_vars }} drush -y si {{ installation_profile_name }} --db-url=mysql://{{ mysql_user }}:{{ mysql_pass }}@127.0.0.1:/{{ mysql_db }} --account-name={{ drupal_user }} --account-pass={{ drupal_pass }} --uri={{ site_url }}"
+  when: run_installation_process
